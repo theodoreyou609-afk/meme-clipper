@@ -25,13 +25,15 @@
 <body>
   <div class="container">
     <h1>Fictional Character AI Editor</h1>
-    <div class="warning">Fictional adult characters only. No real people. Requires your own running ComfyUI backend (e.g. RunPod).</div>
+    <div class="warning">Fictional adult characters only. No real people. Requires your own running ComfyUI backend (e.g. RunPod with CORS enabled).</div>
     
     <label>ComfyUI API URL (e.g. https://xxxx-8188.proxy.runpod.net):</label>
     <input type="text" id="apiUrl" value="https://your-pod-8188.proxy.runpod.net" placeholder="https://xxxx-8188.proxy.runpod.net">
+    <button id="testConn" type="button">Test Connection / CORS</button>
     
     <label>Checkpoint / Model name (must exist on ComfyUI):</label>
     <input type="text" id="modelName" value="sd_xl_base_1.0.safetensors" placeholder="sd_xl_base_1.0.safetensors">
+    <button id="listModels" type="button">List Available Models</button>
     
     <label>Upload Character Image:</label>
     <input type="file" id="imageUpload" accept="image/*">
@@ -70,10 +72,12 @@
     const result = document.getElementById('result');
     const download = document.getElementById('download');
     const statusEl = document.getElementById('status');
+    const testConnBtn = document.getElementById('testConn');
+    const listModelsBtn = document.getElementById('listModels');
 
     let uploadedFile = null;
+    let lastObjectUrl = null;
 
-    // Load saved API URL
     if (localStorage.getItem('comfyApiUrl')) {
       apiUrlInput.value = localStorage.getItem('comfyApiUrl');
     }
@@ -84,6 +88,21 @@
     function setStatus(msg, type = '') {
       statusEl.textContent = msg;
       statusEl.className = type;
+    }
+
+    function getApiUrl() {
+      return apiUrlInput.value.trim().replace(/\/$/, '');
+    }
+
+    function validateModelName(name) {
+      if (!name || !name.trim()) {
+        throw new Error('Checkpoint name is empty.');
+      }
+      const n = name.trim();
+      if (!/\.(safetensors|ckpt|pt|pth|bin)$/i.test(n)) {
+        throw new Error('Checkpoint name should end with .safetensors, .ckpt, .pt, .pth or .bin');
+      }
+      return n;
     }
 
     imageUpload.addEventListener('change', (e) => {
@@ -101,8 +120,9 @@
     });
 
     async function uploadImage(apiUrl, file) {
+      const safeName = (file.name || 'input.png').replace(/[^a-zA-Z0-9._-]/g, '_');
       const form = new FormData();
-      form.append('image', file, file.name);
+      form.append('image', file, safeName);
       form.append('overwrite', 'true');
       form.append('type', 'input');
 
@@ -114,54 +134,49 @@
         const text = await res.text();
         throw new Error(`Upload failed (${res.status}): ${text}`);
       }
-      return await res.json(); // {name, subfolder, type}
+      const data = await res.json();
+      if (!data.name) {
+        throw new Error('Upload response missing name: ' + JSON.stringify(data));
+      }
+      return data;
     }
 
     function buildWorkflow(imageName, prompt, negPrompt, modelName, denoise, steps) {
-      const seed = Math.floor(Math.random() * 1000000000);
+      const seed = Math.floor(Math.random() * 2147483647);
+      const d = parseFloat(denoise);
+      const s = parseInt(steps, 10);
+      if (isNaN(d) || d < 0.01 || d > 1) throw new Error('Invalid denoise value');
+      if (isNaN(s) || s < 1 || s > 150) throw new Error('Invalid steps value');
+
       return {
         "1": {
-          "inputs": {
-            "ckpt_name": modelName
-          },
+          "inputs": { "ckpt_name": modelName },
           "class_type": "CheckpointLoaderSimple"
         },
         "2": {
-          "inputs": {
-            "image": imageName,
-            "upload": "image"
-          },
+          "inputs": { "image": imageName, "upload": "image" },
           "class_type": "LoadImage"
         },
         "3": {
-          "inputs": {
-            "text": prompt,
-            "clip": ["1", 1]
-          },
+          "inputs": { "text": prompt, "clip": ["1", 1] },
           "class_type": "CLIPTextEncode"
         },
         "4": {
-          "inputs": {
-            "text": negPrompt,
-            "clip": ["1", 1]
-          },
+          "inputs": { "text": negPrompt, "clip": ["1", 1] },
           "class_type": "CLIPTextEncode"
         },
         "5": {
-          "inputs": {
-            "pixels": ["2", 0],
-            "vae": ["1", 2]
-          },
+          "inputs": { "pixels": ["2", 0], "vae": ["1", 2] },
           "class_type": "VAEEncode"
         },
         "6": {
           "inputs": {
             "seed": seed,
-            "steps": parseInt(steps),
+            "steps": s,
             "cfg": 7.0,
             "sampler_name": "euler",
             "scheduler": "normal",
-            "denoise": parseFloat(denoise),
+            "denoise": d,
             "model": ["1", 0],
             "positive": ["3", 0],
             "negative": ["4", 0],
@@ -170,17 +185,11 @@
           "class_type": "KSampler"
         },
         "7": {
-          "inputs": {
-            "samples": ["6", 0],
-            "vae": ["1", 2]
-          },
+          "inputs": { "samples": ["6", 0], "vae": ["1", 2] },
           "class_type": "VAEDecode"
         },
         "8": {
-          "inputs": {
-            "filename_prefix": "meme_clipper",
-            "images": ["7", 0]
-          },
+          "inputs": { "filename_prefix": "meme_clipper", "images": ["7", 0] },
           "class_type": "SaveImage"
         }
       };
@@ -193,11 +202,20 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: workflow, client_id: clientId })
       });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { raw: text }; }
       if (!res.ok) {
-        const text = await res.text();
         throw new Error(`Queue failed (${res.status}): ${text}`);
       }
-      return await res.json(); // {prompt_id, number}
+      if (data.error || (data.node_errors && Object.keys(data.node_errors).length > 0)) {
+        const msg = data.error?.message || JSON.stringify(data.node_errors || data.error);
+        throw new Error('Workflow validation failed: ' + msg);
+      }
+      if (!data.prompt_id) {
+        throw new Error('No prompt_id in response: ' + text);
+      }
+      return data;
     }
 
     async function pollHistory(apiUrl, promptId, maxAttempts = 120) {
@@ -209,17 +227,23 @@
         const data = await res.json();
         if (data[promptId]) {
           const entry = data[promptId];
-          if (entry.status && (entry.status.status_str === 'error' || entry.status.completed === false)) {
-            throw new Error('Generation failed on server: ' + (entry.status.exception_message || entry.status.status_str || 'unknown'));
+          const status = entry.status || {};
+          if (status.status_str === 'error' || status.completed === false) {
+            let detail = status.exception_message || status.status_str || 'unknown';
+            if (status.messages && Array.isArray(status.messages)) {
+              const errMsg = status.messages.find(m => m[0] === 'execution_error' || m[0] === 'execution_interrupted');
+              if (errMsg && errMsg[1]) detail = JSON.stringify(errMsg[1]);
+            }
+            throw new Error('Generation failed on server: ' + detail);
           }
-          if (entry.outputs) {
+          if (status.completed === true || (entry.outputs && Object.keys(entry.outputs).length > 0)) {
             return entry;
           }
         }
         setStatus(`Generating... (${i + 1}/${maxAttempts})`, 'loading');
         await new Promise(r => setTimeout(r, 2000));
       }
-      throw new Error('Timeout waiting for generation');
+      throw new Error('Timeout waiting for generation (4+ minutes). Check ComfyUI logs.');
     }
 
     function getViewUrl(apiUrl, imageInfo) {
@@ -231,19 +255,86 @@
       return `${apiUrl}/view?${params.toString()}`;
     }
 
+    async function prepareDownload(viewUrl) {
+      try {
+        const res = await fetch(viewUrl);
+        if (!res.ok) throw new Error('Failed to fetch image for download');
+        const blob = await res.blob();
+        if (lastObjectUrl) URL.revokeObjectURL(lastObjectUrl);
+        lastObjectUrl = URL.createObjectURL(blob);
+        download.href = lastObjectUrl;
+        download.download = 'edited.png';
+        return true;
+      } catch (e) {
+        download.href = viewUrl;
+        download.download = 'edited.png';
+        console.warn('Blob download failed, using direct link:', e);
+        return false;
+      }
+    }
+
+    testConnBtn.addEventListener('click', async () => {
+      const apiUrl = getApiUrl();
+      if (!apiUrl || apiUrl.includes('your-pod')) {
+        setStatus('Enter a real ComfyUI proxy URL first.', 'error');
+        return;
+      }
+      setStatus('Testing connection...', 'loading');
+      try {
+        const res = await fetch(`${apiUrl}/system_stats`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const stats = await res.json();
+        setStatus('Connection OK. ComfyUI reachable. ' + (stats.system ? 'System stats received.' : ''), 'success');
+      } catch (err) {
+        setStatus('Connection failed: ' + err.message + '. Check URL, that the pod is running, and that CORS is enabled (--enable-cors-header "*").', 'error');
+      }
+    });
+
+    listModelsBtn.addEventListener('click', async () => {
+      const apiUrl = getApiUrl();
+      if (!apiUrl || apiUrl.includes('your-pod')) {
+        setStatus('Enter a real ComfyUI proxy URL first.', 'error');
+        return;
+      }
+      setStatus('Fetching model list...', 'loading');
+      try {
+        const res = await fetch(`${apiUrl}/models/checkpoints`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const models = await res.json();
+        if (!Array.isArray(models) || models.length === 0) {
+          setStatus('No checkpoints found. Download models on the pod.', 'error');
+          return;
+        }
+        const list = models.slice(0, 20).join(', ') + (models.length > 20 ? ' ...' : '');
+        setStatus(`Available models (${models.length}): ${list}`, 'success');
+        const current = modelNameInput.value.trim();
+        if (current && !models.includes(current)) {
+          setStatus(`Available models (${models.length}): ${list}\n\nWarning: current model "${current}" not in list.`, 'error');
+        }
+      } catch (err) {
+        setStatus('Could not list models: ' + err.message, 'error');
+      }
+    });
+
     generateBtn.addEventListener('click', async () => {
       if (!uploadedFile) {
         setStatus('Please upload an image first.', 'error');
         return;
       }
-      const apiUrl = apiUrlInput.value.trim().replace(/\/$/, '');
+      const apiUrl = getApiUrl();
       if (!apiUrl || apiUrl.includes('your-pod') || apiUrl.includes('127.0.0.1')) {
         setStatus('Please set a valid ComfyUI API URL (your RunPod proxy).', 'error');
         return;
       }
+      let modelName;
+      try {
+        modelName = validateModelName(modelNameInput.value);
+      } catch (e) {
+        setStatus(e.message, 'error');
+        return;
+      }
       const prompt = promptEl.value.trim();
       const neg = negPromptEl.value.trim();
-      const modelName = modelNameInput.value.trim();
       const denoise = denoiseEl.value;
       const steps = stepsEl.value;
 
@@ -263,7 +354,6 @@
 
         const history = await pollHistory(apiUrl, promptId);
         
-        // Find first image in outputs
         let imageInfo = null;
         for (const nodeId in history.outputs) {
           const out = history.outputs[nodeId];
@@ -279,7 +369,7 @@
         const viewUrl = getViewUrl(apiUrl, imageInfo);
         result.src = viewUrl;
         result.style.display = 'block';
-        download.href = viewUrl;
+        await prepareDownload(viewUrl);
         download.style.display = 'block';
         setStatus('Generation complete!', 'success');
       } catch (err) {
