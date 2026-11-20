@@ -1,38 +1,58 @@
 # Cloud Deployment Guide: ComfyUI on RunPod (No Local GPU)
 
-This guide lets you run a full ComfyUI backend accessible from your iPhone Safari.
+This guide lets you run a full ComfyUI backend accessible from your iPhone Safari, and connect it to the custom frontend in this repo.
 
 ## Why RunPod?
 
 - Official ComfyUI templates
-- Easy public proxy URLs
+- Easy public proxy URLs (HTTPS)
 - Network Volumes so models persist between sessions
 - Pay only while the pod is running
 
 ## Step-by-Step
 
-1. Sign up at https://runpod.io (add payment method for GPU).
+1. Sign up at https://runpod.io (add payment method for GPU). **This requires your account.**
 2. Navigate to **Pods** → **Deploy**.
-3. Search for "ComfyUI" templates (official or community).
+3. Search for "ComfyUI" templates (official or community). Prefer ones with recent ComfyUI + CUDA.
 4. Select GPU:
    - RTX 3090 / 4090 (24 GB) for SDXL + IP-Adapter.
    - Higher if using Flux.
-5. (Optional but recommended) Create and attach a **Network Volume** (e.g., 50–100 GB) mounted at `/workspace` so models and outputs persist.
-6. Deploy the pod.
+5. (Optional but recommended) Create and attach a **Network Volume** (e.g., 50–100 GB) mounted at `/workspace` so models and outputs persist. **Requires your account.**
+6. Deploy the pod. **This incurs cost while running — stop when done.**
 7. Once running, click the **Connect** or proxy link for port 8188. Example format:
    `https://xxxxxxxx-8188.proxy.runpod.net`
-8. Open that URL in iPhone Safari.
-9. In ComfyUI:
-   - Install custom nodes via Manager (IP-Adapter, ControlNet, etc.).
-   - Download models into the volume.
-   - Load or build a workflow for img2img + character reference.
-10. For the custom frontend in this repo: host `index.html` (GitHub Pages, or open locally) and set the API URL to your RunPod proxy address.
+8. Open that URL in iPhone Safari to confirm ComfyUI loads.
+9. In ComfyUI (on the pod):
+   - Use Manager to install custom nodes if needed (IP-Adapter for character consistency, etc.).
+   - Download models (e.g. SDXL) into the models folder (use the volume).
+   - Test a basic workflow.
+10. **Enable CORS for the frontend** (important for browser access from GitHub Pages or local file):
+    - In the pod terminal or launch args, ensure ComfyUI starts with `--enable-cors-header "*"` (many templates support custom launch arguments; check template docs or edit start script).
+    - Restart the pod if needed.
+11. For the custom frontend in this repo:
+    - Open `index.html` in Safari (or host it via GitHub Pages).
+    - Set the API URL field to your RunPod proxy address (e.g. `https://xxxxxxxx-8188.proxy.runpod.net`).
+    - Set the model name to match a checkpoint you installed (default example: `sd_xl_base_1.0.safetensors`).
+    - Upload image, enter prompt, generate.
+
+## Frontend Features Implemented
+
+- Configurable ComfyUI endpoint (saved in localStorage).
+- Image upload via `/upload/image`.
+- Prompt submission with basic img2img workflow (LoadImage → VAEEncode → KSampler → VAEDecode → SaveImage).
+- Generation status polling via `/history`.
+- Result preview via `/view` and download link.
+- Error handling, loading indicators, and status messages.
+- Works in mobile Safari (file input, fetch, FormData).
+
+**Note**: The built-in workflow is a simple img2img. For advanced character consistency, IP-Adapter, inpainting, etc., export your own API-format workflow from ComfyUI and extend the frontend `buildWorkflow` function, or load custom JSON.
 
 ## Cost Control
 
 - Stop the pod when finished (you only pay for runtime).
 - Use Community Cloud for lower prices.
 - Monitor usage in the RunPod dashboard.
+- Network volume storage is billed separately.
 
 ## Alternatives
 
@@ -41,6 +61,14 @@ This guide lets you run a full ComfyUI backend accessible from your iPhone Safar
 
 ## Security Note
 
-RunPod proxy URLs are public if shared. Use strong passwords if the template supports auth, or stop the pod when not in use.
+RunPod proxy URLs are public if shared. Use strong passwords if the template supports auth, or stop the pod when not in use. Do not share the proxy URL publicly.
 
 No models are pre-installed by this repository. You download them yourself on the cloud instance.
+
+## Manual Steps Requiring Your Account Access
+
+- Creating RunPod account and adding payment method.
+- Deploying the pod and attaching Network Volume.
+- Downloading models on the pod.
+- Enabling CORS / configuring launch arguments if not default.
+- Stopping the pod to avoid charges.
