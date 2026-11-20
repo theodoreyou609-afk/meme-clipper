@@ -2,11 +2,13 @@
 
 Mobile-optimized browser interface for image-to-image editing, inpainting, clothing/fashion transformations (bikini, lingerie, glamour, boudoir styles), pose adjustments, and character identity preservation.
 
-**Important**: This is a frontend only. Backend requires a cloud GPU service running ComfyUI. No models have been installed, executed, or tested in this repository. No local GPU is required.
+**Important**: This is a frontend only. Backend requires a cloud GPU service running ComfyUI. No models have been installed, executed, or tested in this repository. No local GPU is required. Works on iPhone Safari.
 
 ## Cloud Deployment (No Local GPU Needed)
 
 Since you only have an iPhone, use a cloud GPU provider. Recommended primary option: **RunPod**.
+
+See [CLOUD_DEPLOY.md](CLOUD_DEPLOY.md) for full step-by-step instructions, including how to connect this frontend to your ComfyUI pod.
 
 ### Cloud Options Comparison (approx. Nov 2026 prices)
 
@@ -22,30 +24,33 @@ Since you only have an iPhone, use a cloud GPU provider. Recommended primary opt
 
 ### Quick Start with RunPod (Recommended)
 
-1. Create a free account at https://www.runpod.io
+1. Create a free account at https://www.runpod.io (**your account**)
 2. Go to Pods → Deploy
-3. Select a ComfyUI template (official ones available, e.g., with CUDA support)
-4. Choose GPU (RTX 4090 or 3090 for SDXL; higher for Flux)
+3. Select a ComfyUI template
+4. Choose GPU (RTX 4090 or 3090 for SDXL)
 5. Add a Network Volume for persistent models if desired
-6. Deploy. Wait for it to start.
+6. Deploy. Wait for it to start. **Incurs cost while running.**
 7. Access the ComfyUI UI via the provided proxy URL (e.g., `https://<pod-id>-8188.proxy.runpod.net`)
-8. From your iPhone Safari, open that URL. Upload images, run workflows.
-9. Point this frontend's API URL field to the same proxy address if using the custom frontend.
+8. From your iPhone Safari, open that URL. Install models, enable CORS if needed (`--enable-cors-header "*"`).
+9. Open this repo's `index.html` (or host via GitHub Pages) and set the API URL field to the same proxy address.
+10. Upload image, enter prompt, generate.
 
-**Character identity consistency**: In ComfyUI, load IP-Adapter (or similar) custom nodes and a reference image of your fictional character.
+**Character identity consistency**: In ComfyUI, load IP-Adapter (or similar) custom nodes and a reference image of your fictional character. Extend the frontend workflow for advanced features.
 
-**Image-to-image & inpainting**: Use standard ComfyUI img2img or masked inpainting workflows.
+**Image-to-image & inpainting**: Basic img2img is implemented. For masked inpainting, customize the workflow.
 
 ### Implemented vs. Requires External Service
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Mobile frontend (upload, prompts, preview, download) | Implemented in this repo | Open `index.html` or host it |
-| Cloud GPU hosting | Requires external paid service (RunPod etc.) | Not free |
+| Mobile frontend (upload, prompts, preview, download) | **Fully implemented** | Open `index.html`; communicates with ComfyUI API |
+| Configurable ComfyUI endpoint | Implemented | Saved in browser localStorage |
+| Generation status + error handling + loading | Implemented | Polls /history, shows messages |
+| Cloud GPU hosting | Requires external paid service (RunPod etc.) | Not free; stop pod when done |
 | ComfyUI + models | Requires you to deploy on cloud | Templates help; you download models |
-| Character consistency (IP-Adapter etc.) | Supported by ComfyUI workflows | Configure in the cloud instance |
-| Image-to-image / inpainting | Supported by ComfyUI | Use appropriate workflow |
-| Public web interface | Yes via cloud proxy | Accessible from iPhone |
+| Character consistency (IP-Adapter etc.) | Supported by ComfyUI workflows | Configure in the cloud instance; extend frontend if needed |
+| Image-to-image / inpainting | Basic img2img implemented | Use appropriate workflow for advanced |
+| Public web interface | Yes via cloud proxy + frontend | Accessible from iPhone Safari |
 
 **No local installation required.**
 
@@ -53,9 +58,14 @@ Since you only have an iPhone, use a cloud GPU provider. Recommended primary opt
 
 - Most powerful for character consistency, inpainting, fashion edits.
 - Cloud templates make it accessible without a PC.
+- Frontend uses standard ComfyUI API endpoints: `/upload/image`, `/prompt`, `/history/{id}`, `/view`.
 
 **Use only fictional adult characters. Do not generate non-consensual imagery of real people.**
 
 ## Disclaimer
 
-This repository contains only the frontend and documentation. Actual generation requires a paid cloud GPU service and your own model downloads. You are responsible for costs, licensing, and legal use.
+This repository contains only the frontend and documentation. Actual generation requires a paid cloud GPU service and your own model downloads. You are responsible for costs, licensing, and legal use. Do not incur GPU expenses without authorization.
+
+## Manual Steps Requiring Your Account
+
+- RunPod account creation, payment method, pod deployment, model downloads, CORS configuration, and stopping the pod.
