@@ -1,4 +1,65 @@
 {
-  "note": "This is a placeholder. Create your own ComfyUI workflow for img2img + IP-Adapter character consistency + optional inpainting. Export the API format JSON and load it in the frontend.",
-  "instructions": "Use LoadImage for character, IPAdapter nodes, VAEEncode for img2img, KSampler, etc. For clothing changes, use high denoise or masked inpainting on clothing regions."
+  "1": {
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple"
+  },
+  "2": {
+    "inputs": {
+      "image": "uploaded_image.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage"
+  },
+  "3": {
+    "inputs": {
+      "text": "wearing elegant bikini, glamour lighting, realistic skin, preserve face and identity, high quality",
+      "clip": ["1", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "4": {
+    "inputs": {
+      "text": "low quality, deformed, blurry, extra limbs, bad anatomy",
+      "clip": ["1", 1]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "5": {
+    "inputs": {
+      "pixels": ["2", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEEncode"
+  },
+  "6": {
+    "inputs": {
+      "seed": 123456789,
+      "steps": 20,
+      "cfg": 7.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 0.65,
+      "model": ["1", 0],
+      "positive": ["3", 0],
+      "negative": ["4", 0],
+      "latent_image": ["5", 0]
+    },
+    "class_type": "KSampler"
+  },
+  "7": {
+    "inputs": {
+      "samples": ["6", 0],
+      "vae": ["1", 2]
+    },
+    "class_type": "VAEDecode"
+  },
+  "8": {
+    "inputs": {
+      "filename_prefix": "meme_clipper",
+      "images": ["7", 0]
+    },
+    "class_type": "SaveImage"
+  }
 }
