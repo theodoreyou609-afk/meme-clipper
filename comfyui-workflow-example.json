@@ -1,0 +1,4 @@
+{
+  "note": "This is a placeholder. Create your own ComfyUI workflow for img2img + IP-Adapter character consistency + optional inpainting. Export the API format JSON and load it in the frontend.",
+  "instructions": "Use LoadImage for character, IPAdapter nodes, VAEEncode for img2img, KSampler, etc. For clothing changes, use high denoise or masked inpainting on clothing regions."
+}

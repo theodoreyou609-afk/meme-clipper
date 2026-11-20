@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI Image Editor - Fictional Characters</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #111; color: #eee; }
+    .container { max-width: 500px; margin: 0 auto; }
+    h1 { font-size: 1.5em; text-align: center; }
+    label, input, textarea, button, select { display: block; width: 100%; margin: 10px 0; padding: 12px; box-sizing: border-box; font-size: 16px; }
+    button { background: #4CAF50; color: white; border: none; border-radius: 8px; }
+    button:active { background: #45a049; }
+    #preview, #result { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; }
+    .warning { background: #ff4444; color: white; padding: 10px; border-radius: 8px; font-size: 0.9em; }
+    textarea { height: 80px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Fictional Character AI Editor</h1>
+    <div class="warning">Fictional adult characters only. No real people. Requires your own running ComfyUI backend.</div>
+    
+    <label>ComfyUI API URL:</label>
+    <input type="text" id="apiUrl" value="http://127.0.0.1:8188" placeholder="http://your-ip:8188">
+    
+    <label>Upload Character Image:</label>
+    <input type="file" id="imageUpload" accept="image/*">
+    
+    <label>Edit Prompt (e.g., wearing elegant bikini, glamour lighting, realistic skin):</label>
+    <textarea id="prompt" placeholder="Change clothing to stylish bikini, boudoir style, soft lighting, preserve face and identity"></textarea>
+    
+    <label>Negative Prompt:</label>
+    <textarea id="negPrompt" placeholder="deformed, ugly, blurry, bad anatomy">low quality, deformed, blurry, extra limbs</textarea>
+    
+    <button id="generate">Generate / Edit Image</button>
+    
+    <h3>Preview / Result</h3>
+    <img id="preview" style="display:none;">
+    <img id="result" style="display:none;">
+    <a id="download" style="display:none;" download="edited.png">Download</a>
+  </div>
+  <script>
+    const apiUrlInput = document.getElementById('apiUrl');
+    const imageUpload = document.getElementById('imageUpload');
+    const promptEl = document.getElementById('prompt');
+    const negPromptEl = document.getElementById('negPrompt');
+    const generateBtn = document.getElementById('generate');
+    const preview = document.getElementById('preview');
+    const result = document.getElementById('result');
+    const download = document.getElementById('download');
+
+    let uploadedImage = null;
+
+    imageUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          preview.src = ev.target.result;
+          preview.style.display = 'block';
+          uploadedImage = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    generateBtn.addEventListener('click', async () => {
+      if (!uploadedImage) {
+        alert('Please upload an image first.');
+        return;
+      }
+      const apiUrl = apiUrlInput.value.trim();
+      const prompt = promptEl.value;
+      const neg = negPromptEl.value;
+
+      alert('This is a demo frontend. Full integration requires a ComfyUI workflow configured for img2img/inpainting with character reference.\n\nIn a real setup, this would upload the image to ComfyUI and queue a prompt.\n\nNo actual generation has been performed.');
+
+      // Placeholder: In production, implement ComfyUI API calls:
+      // 1. Upload image via /upload/image
+      // 2. Queue workflow JSON with img2img, IP-Adapter for identity, mask if needed
+      // 3. Poll /history for result
+      // 4. Fetch image from /view
+
+      result.src = preview.src; // placeholder
+      result.style.display = 'block';
+      download.href = preview.src;
+      download.style.display = 'block';
+    });
+  </script>
+</body>
+</html>
