@@ -30,22 +30,32 @@ This guide lets you run a full ComfyUI backend accessible from your iPhone Safar
     - In the pod terminal or launch args, ensure ComfyUI starts with `--enable-cors-header "*"` (many templates support custom launch arguments; check template docs or edit start script).
     - Restart the pod if needed.
 11. For the custom frontend in this repo:
-    - Open `index.html` in Safari (or host it via GitHub Pages).
+    - **GitHub Pages**: Settings → Pages → Deploy from branch `main` / root. The page will be available at `https://theodoreyou609-afk.github.io/meme-clipper/`.
+    - Or open `index.html` directly in Safari.
     - Set the API URL field to your RunPod proxy address (e.g. `https://xxxxxxxx-8188.proxy.runpod.net`).
-    - Set the model name to match a checkpoint you installed (default example: `sd_xl_base_1.0.safetensors`).
+    - Use the **Test Connection / CORS** button to verify.
+    - Use **List Available Models** to see checkpoints on the pod and pick one.
+    - Set the model name to match exactly.
     - Upload image, enter prompt, generate.
 
 ## Frontend Features Implemented
 
 - Configurable ComfyUI endpoint (saved in localStorage).
-- Image upload via `/upload/image`.
+- Connection test and model listing (requires CORS).
+- Image upload via `/upload/image` (safe filename).
 - Prompt submission with basic img2img workflow (LoadImage → VAEEncode → KSampler → VAEDecode → SaveImage).
-- Generation status polling via `/history`.
-- Result preview via `/view` and download link.
+- Checkpoint name validation (non-empty + common extensions).
+- Generation status polling via `/history` with improved error detection (status, messages, node_errors on queue).
+- Result preview via `/view` and download (blob-based for better Safari support).
 - Error handling, loading indicators, and status messages.
 - Works in mobile Safari (file input, fetch, FormData).
 
 **Note**: The built-in workflow is a simple img2img. For advanced character consistency, IP-Adapter, inpainting, etc., export your own API-format workflow from ComfyUI and extend the frontend `buildWorkflow` function, or load custom JSON.
+
+**Audit status** (code review only; no live RunPod runtime test performed):
+- Workflow graph, LoadImage reference, and KSampler/VAE connections are valid ComfyUI API format.
+- CORS must be enabled on the pod for the frontend to work from GitHub Pages or file://.
+- Download uses blob + object URL when CORS allows; falls back to direct link.
 
 ## Cost Control
 
@@ -72,3 +82,4 @@ No models are pre-installed by this repository. You download them yourself on th
 - Downloading models on the pod.
 - Enabling CORS / configuring launch arguments if not default.
 - Stopping the pod to avoid charges.
+- Enabling GitHub Pages (optional) if you want a public URL for the frontend.
