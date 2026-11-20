@@ -2,52 +2,60 @@
 
 Mobile-optimized browser interface for image-to-image editing, inpainting, clothing/fashion transformations (bikini, lingerie, glamour, boudoir styles), pose adjustments, and character identity preservation.
 
-**Important**: This is a frontend only. It requires a separately installed and running ComfyUI instance with appropriate models. No models have been installed, executed, or tested in this repository.
+**Important**: This is a frontend only. Backend requires a cloud GPU service running ComfyUI. No models have been installed, executed, or tested in this repository. No local GPU is required.
+
+## Cloud Deployment (No Local GPU Needed)
+
+Since you only have an iPhone, use a cloud GPU provider. Recommended primary option: **RunPod**.
+
+### Cloud Options Comparison (approx. Nov 2026 prices)
+
+| Provider | Ease of Use | Typical Cost (RTX 4090 / 24GB) | Public Access | Notes | Best For |
+|----------|-------------|-------------------------------|---------------|-------|----------|
+| **RunPod** | High (official ComfyUI templates) | ~$0.34–$0.89/hr (Community/Secure) | Yes (proxy URL) | Official templates, Network Volumes for models, serverless option | **Recommended** |
+| **Vast.ai** | Medium (marketplace) | Often cheaper (~$0.20–$0.60/hr) | Yes | Lowest cost but more variable reliability | Budget users |
+| **Comfy Cloud** (official) | Highest | Subscription or higher hourly | Yes | Zero setup, limited custom nodes | Absolute beginners |
+| Hugging Face Spaces | Medium | Free tier limited; paid GPU | Yes | Good for demos | Sharing |
+| Others (Lambda, Paperspace) | Medium | Varies | Yes | Solid alternatives | - |
+
+**Cost estimate example**: 2-hour session on RTX 4090 ≈ $1–$2 on RunPod. Storage (network volume) extra (~$0.07/GB/month). Stop the pod when not in use.
+
+### Quick Start with RunPod (Recommended)
+
+1. Create a free account at https://www.runpod.io
+2. Go to Pods → Deploy
+3. Select a ComfyUI template (official ones available, e.g., with CUDA support)
+4. Choose GPU (RTX 4090 or 3090 for SDXL; higher for Flux)
+5. Add a Network Volume for persistent models if desired
+6. Deploy. Wait for it to start.
+7. Access the ComfyUI UI via the provided proxy URL (e.g., `https://<pod-id>-8188.proxy.runpod.net`)
+8. From your iPhone Safari, open that URL. Upload images, run workflows.
+9. Point this frontend's API URL field to the same proxy address if using the custom frontend.
+
+**Character identity consistency**: In ComfyUI, load IP-Adapter (or similar) custom nodes and a reference image of your fictional character.
+
+**Image-to-image & inpainting**: Use standard ComfyUI img2img or masked inpainting workflows.
+
+### Implemented vs. Requires External Service
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Mobile frontend (upload, prompts, preview, download) | Implemented in this repo | Open `index.html` or host it |
+| Cloud GPU hosting | Requires external paid service (RunPod etc.) | Not free |
+| ComfyUI + models | Requires you to deploy on cloud | Templates help; you download models |
+| Character consistency (IP-Adapter etc.) | Supported by ComfyUI workflows | Configure in the cloud instance |
+| Image-to-image / inpainting | Supported by ComfyUI | Use appropriate workflow |
+| Public web interface | Yes via cloud proxy | Accessible from iPhone |
+
+**No local installation required.**
 
 ## Selected Backend: ComfyUI
 
-After evaluating open-source options:
-
-- **ComfyUI** (recommended): Most powerful, modular, actively developed. Supports advanced workflows for character consistency (IP-Adapter, InstantID, PuLID, etc.), inpainting, ControlNet for poses, custom nodes. Best for fashion/glamour edits while preserving identity. Hardware: NVIDIA GPU with 8GB+ VRAM recommended (SDXL), 12GB+ preferred for Flux or heavy workflows.
-- **AUTOMATIC1111 WebUI**: Classic interface, good extensions for inpainting. Less flexible for complex character workflows. Updates slowed.
-- **Fooocus**: Simplest for beginners, SDXL focused, has inpainting. Limited long-term support and less control.
-- Others (e.g., OpenGPEX): Browser-native with optional ComfyUI bridge.
-
-ComfyUI is the most suitable for the required features.
-
-### Licensing & Hardware
-
-- Software: ComfyUI is open source (GPL-3.0).
-- Models: SD 1.5 / SDXL under OpenRAIL licenses (with conditions). Flux.1 dev is non-commercial; Flux.1 schnell is Apache 2.0. User must check specific checkpoint/LoRA licenses.
-- Hardware: Minimum ~8GB VRAM for SDXL. 12-16GB recommended. CPU-only is impractical. System RAM 16GB+ , storage for models (several GB each).
-
-### Features Supported (via proper ComfyUI workflows)
-
-- Image-to-image transformation
-- Inpainting and masking
-- Character identity preservation (IP-Adapter, etc.)
-- Fashion, bikini, lingerie, glamour, boudoir styles (via prompts + models)
-- Pose/body adjustments (ControlNet OpenPose, etc.)
-- Realistic skin/lighting (quality models + prompts)
-- High-res exports
+- Most powerful for character consistency, inpainting, fashion edits.
+- Cloud templates make it accessible without a PC.
 
 **Use only fictional adult characters. Do not generate non-consensual imagery of real people.**
 
-## Setup
-
-1. Install ComfyUI separately on a machine with a suitable GPU: https://github.com/Comfy-Org/ComfyUI
-2. Install required custom nodes (e.g., IPAdapter, ControlNet, Inpaint nodes).
-3. Download models (checkpoints, IP-Adapters, etc.) into ComfyUI folders.
-4. Run ComfyUI with `--listen` for network access if using from another device (phone).
-5. Serve this frontend (or open index.html) and set the ComfyUI API URL (e.g., http://your-pc-ip:8188).
-6. Configure/load a suitable workflow for img2img + inpainting + character reference.
-
-This frontend is a starting point. Advanced features require custom ComfyUI workflows matching your models.
-
-## Mobile Optimization
-
-Designed for iPhone Safari: responsive, touch-friendly, large buttons, file upload, canvas preview.
-
 ## Disclaimer
 
-No models or backend have been installed or tested here. You are responsible for hardware, model downloads, licensing compliance, and legal use of generated content.
+This repository contains only the frontend and documentation. Actual generation requires a paid cloud GPU service and your own model downloads. You are responsible for costs, licensing, and legal use.
