@@ -32,7 +32,7 @@ See [CLOUD_DEPLOY.md](CLOUD_DEPLOY.md) for full step-by-step instructions, inclu
 6. Deploy. Wait for it to start. **Incurs cost while running.**
 7. Access the ComfyUI UI via the provided proxy URL (e.g., `https://<pod-id>-8188.proxy.runpod.net`)
 8. From your iPhone Safari, open that URL. Install models, enable CORS if needed (`--enable-cors-header "*"`).
-9. Open this repo's `index.html` (or host via GitHub Pages) and set the API URL field to the same proxy address.
+9. Open this repo's `index.html` (or enable GitHub Pages on `main` / root) and set the API URL field to the same proxy address. Use the Test Connection and List Models buttons.
 10. Upload image, enter prompt, generate.
 
 **Character identity consistency**: In ComfyUI, load IP-Adapter (or similar) custom nodes and a reference image of your fictional character. Extend the frontend workflow for advanced features.
@@ -45,12 +45,15 @@ See [CLOUD_DEPLOY.md](CLOUD_DEPLOY.md) for full step-by-step instructions, inclu
 |---------|--------|-------|
 | Mobile frontend (upload, prompts, preview, download) | **Fully implemented** | Open `index.html`; communicates with ComfyUI API |
 | Configurable ComfyUI endpoint | Implemented | Saved in browser localStorage |
-| Generation status + error handling + loading | Implemented | Polls /history, shows messages |
+| Generation status + error handling + loading | Implemented | Polls /history, improved error detection |
+| Connection / model list tests | Implemented | Requires CORS |
+| Checkpoint validation | Implemented | Non-empty + common extensions |
+| Safari-friendly download | Implemented | Blob + object URL when CORS allows |
 | Cloud GPU hosting | Requires external paid service (RunPod etc.) | Not free; stop pod when done |
 | ComfyUI + models | Requires you to deploy on cloud | Templates help; you download models |
 | Character consistency (IP-Adapter etc.) | Supported by ComfyUI workflows | Configure in the cloud instance; extend frontend if needed |
 | Image-to-image / inpainting | Basic img2img implemented | Use appropriate workflow for advanced |
-| Public web interface | Yes via cloud proxy + frontend | Accessible from iPhone Safari |
+| Public web interface | Yes via cloud proxy + frontend | Accessible from iPhone Safari; GitHub Pages ready |
 
 **No local installation required.**
 
@@ -58,7 +61,9 @@ See [CLOUD_DEPLOY.md](CLOUD_DEPLOY.md) for full step-by-step instructions, inclu
 
 - Most powerful for character consistency, inpainting, fashion edits.
 - Cloud templates make it accessible without a PC.
-- Frontend uses standard ComfyUI API endpoints: `/upload/image`, `/prompt`, `/history/{id}`, `/view`.
+- Frontend uses standard ComfyUI API endpoints: `/upload/image`, `/prompt`, `/history/{id}`, `/view`, `/system_stats`, `/models/checkpoints`.
+
+**Audit note**: Workflow structure, LoadImage reference, and KSampler/VAE connections verified as valid API format via code review. No live runtime test against a RunPod instance was performed.
 
 **Use only fictional adult characters. Do not generate non-consensual imagery of real people.**
 
@@ -69,3 +74,4 @@ This repository contains only the frontend and documentation. Actual generation 
 ## Manual Steps Requiring Your Account
 
 - RunPod account creation, payment method, pod deployment, model downloads, CORS configuration, and stopping the pod.
+- Optional: enable GitHub Pages for a public frontend URL.
